@@ -102,6 +102,15 @@ struct xiic_i2c {
 #define XIIC_RFD_REG_OFFSET  (0x20+XIIC_REG_OFFSET)	/* Rx FIFO Depth reg  */
 #define XIIC_GPO_REG_OFFSET  (0x24+XIIC_REG_OFFSET)	/* Output Register    */
 
+#define XIIC_TSUSTA_REG_OFFSET 	(0x28+XIIC_REG_OFFSET) /* START Setup Time 	*/
+#define XIIC_TSUSTO_REG_OFFSET 	(0x2C+XIIC_REG_OFFSET) /* STOP Setup Time 	*/
+#define XIIC_THDSTA_REG_OFFSET 	(0x30+XIIC_REG_OFFSET) /* START Hold Time 	*/
+#define XIIC_TSUDAT_REG_OFFSET 	(0x34+XIIC_REG_OFFSET) /* Data Setup Time 	*/
+#define XIIC_TBUF_REG_OFFSET 	(0x38+XIIC_REG_OFFSET) /* Bus Free Time 	*/
+#define XIIC_THIGH_REG_OFFSET 	(0x3C+XIIC_REG_OFFSET) /* High Period Time 	*/
+#define XIIC_TLOW_REG_OFFSET 	(0x40+XIIC_REG_OFFSET) /* Low Period Time 	*/
+#define XIIC_THDDAT_REG_OFFSET 	(0x44+XIIC_REG_OFFSET) /* Data Hold Time 	*/
+
 /* Control Register masks */
 #define XIIC_CR_ENABLE_DEVICE_MASK        0x01	/* Device enable = 1      */
 #define XIIC_CR_TX_FIFO_RESET_MASK        0x02	/* Transmit FIFO reset=1  */
@@ -737,6 +746,10 @@ static int xiic_i2c_probe(struct platform_device *pdev)
 	int ret, irq;
 	u8 i;
 	u32 sr;
+	u32 thdsta;
+	u32 tsusta;
+	u32 tsusto;
+	u32 setup_hold_multiplier;
 
 	i2c = devm_kzalloc(&pdev->dev, sizeof(*i2c), GFP_KERNEL);
 	if (!i2c)
@@ -800,6 +813,23 @@ static int xiic_i2c_probe(struct platform_device *pdev)
 	if (!(sr & XIIC_SR_TX_FIFO_EMPTY_MASK))
 		i2c->endianness = BIG;
 
+	/*
+	 * Set Timing Parameters
+	 * Apply multipliers/dividers to various timing parameters
+ 	 */
+	if ( of_property_read_u32_index(i2c->adap.dev.of_node, "setup_hold_multiplier", 0, &setup_hold_multiplier) < 0){
+		dev_dbg("Multiplier field not found");
+	}
+	else {
+		dev_dbg("Multipliing timing parameters by %d", setup_hold_multiplier);
+		thdsta = xiic_getreg32(i2c, XIIC_THDSTA_REG_OFFSET);
+		dev_dbg("THDSTA Initial Value 0x%08x", thdsta);
+		thdsta *= setup_hold_multiplier;
+		dev_dbg("THDSTA New Value 0x%08x", thdsta);
+		xiic_setreg32(i2c, XIIC_THDSTA_REG_OFFSET, thdsta);
+	}
+
+	
 	xiic_reinit(i2c);
 
 	/* add i2c adapter to i2c tree */
