@@ -282,6 +282,40 @@ static void xiic_reinit(struct xiic_i2c *i2c)
 {
 	xiic_setreg32(i2c, XIIC_RESETR_OFFSET, XIIC_RESET_MASK);
 
+	
+        /*
+         * Set Timing Parameters
+         * Apply multipliers/dividers to various timing parameters
+         */
+        if ( of_property_read_u32_index(i2c->adap.dev.of_node, "setup_hold_multiplier", 0, &setup_hold_multiplier) < 0){
+                dev_dbg(i2c->adap.dev.parent, "Multiplier field not found");
+        }
+        else {
+                dev_dbg(i2c->adap.dev.parent, "Multipliing timing parameters by %d", setup_hold_multiplier);
+                
+		thdsta = xiic_getreg32(i2c, XIIC_THDSTA_REG_OFFSET);
+                dev_dbg(i2c->adap.dev.parent, "THDSTA Initial Value 0x%08x", thdsta);
+                thdsta *= setup_hold_multiplier;
+                xiic_setreg32(i2c, XIIC_THDSTA_REG_OFFSET, thdsta);
+		thdsta = xiic_getreg32(i2c, XIIC_THDSTA_REG_OFFSET);
+		dev_dbg(i2c->adap.dev.parent, "THDSTA New Value 0x%08x", thdsta);
+
+                tsusta = xiic_getreg32(i2c, XIIC_TSUSTA_REG_OFFSET);
+                dev_dbg(i2c->adap.dev.parent, "TSUSTA Initial Value 0x%08x", tsusta);
+                tsusta *= setup_hold_multiplier;
+                xiic_setreg32(i2c, XIIC_TSUSTA_REG_OFFSET, tsusta);
+		tsusta = xiic_getreg32(i2c, XIIC_TSUSTA_REG_OFFSET);
+		dev_dbg(i2c->adap.dev.parent, "TSUSTA New Value 0x%08x", tsusta);
+
+                tsusto = xiic_getreg32(i2c, XIIC_TSUSTO_REG_OFFSET);
+                dev_dbg(i2c->adap.dev.parent, "TSUSTO Initial Value 0x%08x", tsusto);
+                tsusto *= setup_hold_multiplier;
+                xiic_setreg32(i2c, XIIC_TSUSTO_REG_OFFSET, tsusto);
+		tsusto = xiic_getreg32(i2c, XIIC_TSUSTO_REG_OFFSET);
+		dev_dbg(i2c->adap.dev.parent, "TSUSTO New Value 0x%08x", tsusto);
+
+        }
+
 	/* Set receive Fifo depth to maximum (zero based). */
 	xiic_setreg8(i2c, XIIC_RFD_REG_OFFSET, IIC_RX_FIFO_DEPTH - 1);
 
@@ -813,64 +847,7 @@ static int xiic_i2c_probe(struct platform_device *pdev)
 	if (!(sr & XIIC_SR_TX_FIFO_EMPTY_MASK))
 		i2c->endianness = BIG;
 
-	/*
-	 * Set Timing Parameters
-	 * Apply multipliers/dividers to various timing parameters
- 	 */
-	if ( of_property_read_u32_index(i2c->adap.dev.of_node, "setup_hold_multiplier", 0, &setup_hold_multiplier) < 0){
-		dev_dbg(i2c->adap.dev.parent, "Multiplier field not found");
-	}
-	else {
-		dev_dbg(i2c->adap.dev.parent, "Multipliing timing parameters by %d", setup_hold_multiplier);
-		thdsta = xiic_getreg32(i2c, XIIC_THDSTA_REG_OFFSET);
-		dev_dbg(i2c->adap.dev.parent, "THDSTA Initial Value 0x%08x", thdsta);
-		thdsta *= setup_hold_multiplier;
-		dev_dbg(i2c->adap.dev.parent, "THDSTA New Value 0x%08x", thdsta);
-		xiic_setreg32(i2c, XIIC_THDSTA_REG_OFFSET, thdsta);
-
-		tsusta = xiic_getreg32(i2c, XIIC_TSUSTA_REG_OFFSET);
-                dev_dbg(i2c->adap.dev.parent, "TSUSTA Initial Value 0x%08x", tsusta);
-                tsusta *= setup_hold_multiplier;
-                dev_dbg(i2c->adap.dev.parent, "TSUSTA New Value 0x%08x", tsusta);
-                xiic_setreg32(i2c, XIIC_TSUSTA_REG_OFFSET, tsusta);
-
-		tsusto = xiic_getreg32(i2c, XIIC_TSUSTO_REG_OFFSET);
-                dev_dbg(i2c->adap.dev.parent, "TSUSTO Initial Value 0x%08x", tsusto);
-                tsusto *= setup_hold_multiplier;
-                dev_dbg(i2c->adap.dev.parent, "TSUSTO New Value 0x%08x", tsusto);
-                xiic_setreg32(i2c, XIIC_TSUSTO_REG_OFFSET, tsusto);
-	}
-
-	
 	xiic_reinit(i2c);
-
-	/*
-         * Set Timing Parameters
-         * Apply multipliers/dividers to various timing parameters
-         */
-        if ( of_property_read_u32_index(i2c->adap.dev.of_node, "setup_hold_multiplier", 0, &setup_hold_multiplier) < 0){
-                dev_dbg(i2c->adap.dev.parent, "Multiplier field not found");
-        }
-        else {
-                dev_dbg(i2c->adap.dev.parent, "Multipliing timing parameters by %d", setup_hold_multiplier);
-                thdsta = xiic_getreg32(i2c, XIIC_THDSTA_REG_OFFSET);
-                dev_dbg(i2c->adap.dev.parent, "THDSTA Initial Value 0x%08x", thdsta);
-                thdsta *= setup_hold_multiplier;
-                dev_dbg(i2c->adap.dev.parent, "THDSTA New Value 0x%08x", thdsta);
-                xiic_setreg32(i2c, XIIC_THDSTA_REG_OFFSET, thdsta);
-
-                tsusta = xiic_getreg32(i2c, XIIC_TSUSTA_REG_OFFSET);
-                dev_dbg(i2c->adap.dev.parent, "TSUSTA Initial Value 0x%08x", tsusta);
-                tsusta *= setup_hold_multiplier;
-                dev_dbg(i2c->adap.dev.parent, "TSUSTA New Value 0x%08x", tsusta);
-                xiic_setreg32(i2c, XIIC_TSUSTA_REG_OFFSET, tsusta);
-
-                tsusto = xiic_getreg32(i2c, XIIC_TSUSTO_REG_OFFSET);
-                dev_dbg(i2c->adap.dev.parent, "TSUSTO Initial Value 0x%08x", tsusto);
-                tsusto *= setup_hold_multiplier;
-                dev_dbg(i2c->adap.dev.parent, "TSUSTO New Value 0x%08x", tsusto);
-                xiic_setreg32(i2c, XIIC_TSUSTO_REG_OFFSET, tsusto);
-        }
 
 	/* add i2c adapter to i2c tree */
 	ret = i2c_add_adapter(&i2c->adap);
