@@ -280,6 +280,13 @@ static void xiic_clear_rx_fifo(struct xiic_i2c *i2c)
 
 static void xiic_reinit(struct xiic_i2c *i2c)
 {
+
+        u32 thdsta;
+        u32 tsusta;
+        u32 tsusto;
+        u32 setup_hold_multiplier;
+
+
 	xiic_setreg32(i2c, XIIC_RESETR_OFFSET, XIIC_RESET_MASK);
 
 	
