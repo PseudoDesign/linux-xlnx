@@ -787,10 +787,6 @@ static int xiic_i2c_probe(struct platform_device *pdev)
 	int ret, irq;
 	u8 i;
 	u32 sr;
-	u32 thdsta;
-	u32 tsusta;
-	u32 tsusto;
-	u32 setup_hold_multiplier;
 
 	i2c = devm_kzalloc(&pdev->dev, sizeof(*i2c), GFP_KERNEL);
 	if (!i2c)
