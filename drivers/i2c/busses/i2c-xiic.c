@@ -758,6 +758,7 @@ static int xiic_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 out:
 	pm_runtime_mark_last_busy(i2c->dev);
 	pm_runtime_put_autosuspend(i2c->dev);
+	dev_dbg(adap->dev.parent, "%s exit err: %d", __func__, err);
 	return err;
 }
 
