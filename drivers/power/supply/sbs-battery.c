@@ -127,6 +127,8 @@ static const struct chip_data {
 		SBS_DATA(POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN, 0x19, 0, 65535),
 	[REG_DESIGN_VOLTAGE_MAX] =
 		SBS_DATA(POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN, 0x19, 0, 65535),
+	[REG_MANUFACTURE_DATE] =
+                SBS_DATA(POWER_SUPPLY_PROP_MANUFACTURE_DATE, 0x1B, 0, 65535),
 	[REG_SERIAL_NUMBER] =
 		SBS_DATA(POWER_SUPPLY_PROP_SERIAL_NUMBER, 0x1C, 0, 65535),
 	/* Properties of type `const char *' */
@@ -160,6 +162,7 @@ static enum power_supply_property sbs_properties[] = {
 	POWER_SUPPLY_PROP_CHARGE_NOW,
 	POWER_SUPPLY_PROP_CHARGE_FULL,
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+	POWER_SUPPLY_PROP_MANUFACTURE_DATE,
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_PROP_MANUFACTURER,
 	POWER_SUPPLY_PROP_MODEL_NAME
@@ -511,6 +514,10 @@ static void  sbs_unit_adjustment(struct i2c_client *client,
 		val->intval *= TIME_UNIT_CONVERSION;
 		break;
 
+	case POWER_SUPPLY_PROP_MANUFACTURE_DATE:
+		/* TODO: convert to time_t per 5.1.26 */
+		break;
+
 	default:
 		dev_dbg(&client->dev,
 			"%s: no need for unit conversion %d\n", __func__, psp);
@@ -656,6 +663,7 @@ static int sbs_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
 	case POWER_SUPPLY_PROP_CAPACITY:
+	case POWER_SUPPLY_PROP_MANUFACTURE_DATE:
 		ret = sbs_get_property_index(client, psp);
 		if (ret < 0)
 			break;
