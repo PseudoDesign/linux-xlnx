@@ -150,6 +150,7 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT,
 	POWER_SUPPLY_PROP_CALIBRATE,
 	POWER_SUPPLY_PROP_MAX_ERROR, /* in percents! */
+	POWER_SUPPLY_PROP_MANUFACTURE_DATE, /* In seeconds from epoch (time_t) */
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_PROP_MODEL_NAME,
 	POWER_SUPPLY_PROP_MANUFACTURER,
