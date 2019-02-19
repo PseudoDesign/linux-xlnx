@@ -517,14 +517,12 @@ static void  sbs_unit_adjustment(struct i2c_client *client,
 
 	case POWER_SUPPLY_PROP_MANUFACTURE_DATE:
 		/* convert to time_t per 5.1.26 of sbs spec */
-		val->intval = mktime64(
-			((val->intval & 0xFE00) >> 9) + 1980,/* year */
-			(val->intval & 0x01E0) >> 5,/* month */
-			val->intval & 0x001F,/* day */
-			0, /* hour */
-			0, /* min */
-			0, /* second */
-		);
+		val->intval = mktime64(((val->intval & 0xFE00) >> 9) + 1980,/* year */
+				       (val->intval & 0x01E0) >> 5,/* month */
+			               val->intval & 0x001F,/* day */
+			               0, /* hour */
+			               0, /* min */
+			               0 /* second */);
 		break;
 
 	default:
