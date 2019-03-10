@@ -27,6 +27,8 @@
 #include <linux/hwmon.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/err.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
 #include <linux/mutex.h>
 #include <linux/delay.h>
 #include <linux/log2.h>
@@ -1370,6 +1372,11 @@ static const struct i2c_device_id adt7470_id[] = {
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, adt7470_id);
+
+static const struct of_device_id adt7470_dt_ids[] = {
+	{ .compatible = "adt,adt7470" }
+};
+MODULE_DEVICE_TABLE(of, adt7470_dt_ids);
 
 static struct i2c_driver adt7470_driver = {
 	.class		= I2C_CLASS_HWMON,
