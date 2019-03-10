@@ -1382,6 +1382,7 @@ static struct i2c_driver adt7470_driver = {
 	.class		= I2C_CLASS_HWMON,
 	.driver = {
 		.name	= "adt7470",
+		.of_match_table = adt7470_dt_ids,
 	},
 	.probe		= adt7470_probe,
 	.remove		= adt7470_remove,
