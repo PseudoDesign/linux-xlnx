@@ -1,3 +1,24 @@
+/*
+ * A hwmon driver for the Linear Technology LTC2946
+ * Copyright (C) 2019 Pseudo Design, LLC.
+ *
+ * Author: Adam Schafer <adam@pseudo.design>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #include <linux/module.h>   /* Needed by all modules */
 #include <linux/init.h>     /* Needed for the macros */
 #include <linux/err.h>
@@ -52,19 +73,28 @@ static int ltc2946_remove(struct i2c_client *client)
 	return 0;
 }
 
+static const struct i2c_device_id ltc2946_id[] = {
+	{ "ltc2946", 0 },
+	{ }
+};
+MODULE_DEVICE_TABLE(i2c,ltc2946_id);
+
+static const struct of_device_id ltc2946_dt_ids[] = {
+	{ .compatible = "ltc,ltc2946" },
+	{ }
+};
+MODULE_DEVICE_TABLE(of, ltc2946_dt_ids);
 
 static struct i2c_driver ltc2946_driver = {
 	.probe = ltc2946_probe,
 	.remove = ltc2946_remove,
-	//.id_table = ltc2946_id,
+	.id_table = ltc2946_id,
 	.driver = {
 		.name = "ltc2946",
-		//.of_match_table = ltc2946_dt_ids,
+		.of_match_table = ltc2946_dt_ids,
 	},
 };
 module_i2c_driver(ltc2946_driver);
-
-
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Adam Schafer <adam@pseudo.design>");
