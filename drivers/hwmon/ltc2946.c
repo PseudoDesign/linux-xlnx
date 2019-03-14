@@ -5,6 +5,10 @@
 #include <linux/util_macros.h>
 #include <linux/i2c.h>
 
+static struct attribute *ltc2946_attrs[] = {
+	NULL
+};
+ATTRIBUTE_GROUPS(ltc2946);
 
 struct ltc2946_data {
 	struct i2c_client *client;
