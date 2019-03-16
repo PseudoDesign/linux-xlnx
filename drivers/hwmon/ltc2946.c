@@ -27,10 +27,23 @@
 #include <linux/i2c.h>
 #include <linux/printk.h>
 
+/* Sensor attributes supported by this device */
+
+static SENSOR_DEVICE_ATTR(power1_max, S_IWUSR | S_IRUGO, show_power_max, set_power_max, 0);
+
+static SENSOR_DEVICE_ATTR(power1_min, S_IWUSR | S_IRUGO, show_power_min, set_power_min, 0);
+
+static SENSOR_DEVICE_ATTR(power1_input, S_IRUGO, show_power, NULL, 0);
+
 static struct attribute *ltc2946_attrs[] = {
-	NULL
+	&sensor_dev_attr_power1_max.dev_attr.attr,
+        &sensor_dev_attr_power1_min.dev_attr.attr,
+        &sensor_dev_attr_power1_input.dev_attr.attr,
+	NULL,
 };
 ATTRIBUTE_GROUPS(ltc2946);
+
+
 
 struct ltc2946_data {
 	struct i2c_client *client;
