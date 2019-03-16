@@ -25,6 +25,7 @@
 #include <linux/hwmon.h>
 #include <linux/util_macros.h>
 #include <linux/i2c.h>
+#include <linux/printk.h>
 
 static struct attribute *ltc2946_attrs[] = {
 	NULL
@@ -41,6 +42,8 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
 	struct device *hwmon_dev;
 	struct ltc2946_data *data;
 
+	pr_err("Probing ltc2946");
+
 	dev_info(&client->dev, "%s chip found\n", client->name);
 
 	// Allocate this driver's memory
@@ -49,6 +52,7 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
 		return -ENOMEM;
 
 	// INITIALIZE data HERE
+	pr_err("Probing ltc2946");
 
 	// Register the i2c client
 	i2c_set_clientdata(client, data);
