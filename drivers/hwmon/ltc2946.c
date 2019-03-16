@@ -23,17 +23,51 @@
 #include <linux/init.h>     /* Needed for the macros */
 #include <linux/err.h>
 #include <linux/hwmon.h>
+#include <linux/hwmon-sysfs.h>
 #include <linux/util_macros.h>
 #include <linux/i2c.h>
 #include <linux/printk.h>
 
+/* Functions supporting the sensor attributes */
+
+static ssize_t show_power_max(struct device *dev, struct device_attribute *devattr, char *buf)
+{
+	return 0;
+}
+
+static ssize_t set_power_max(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
+{
+	return 0;
+}
+
+static ssize_t show_power_min(struct device *dev, struct device_attribute *devattr, char *buf)
+{
+	return 0;
+}
+
+
+static ssize_t set_power_min(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
+{
+	return 0;
+}
+
+static ssize_t show_power_input(struct device *dev, struct device_attribute *devattr, char *buf)
+{
+	return 0;
+}
+
+static ssize_t set_power_input(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
+{
+	return 0;
+}
+
 /* Sensor attributes supported by this device */
 
-static SENSOR_DEVICE_ATTR(power1_max, S_IWUSR | S_IRUGO, show_power_max, set_power_max, 0);
+static SENSOR_DEVICE_ATTR(power1_max, 0644, show_power_max, set_power_max, 0);
 
-static SENSOR_DEVICE_ATTR(power1_min, S_IWUSR | S_IRUGO, show_power_min, set_power_min, 0);
+static SENSOR_DEVICE_ATTR(power1_min, 0644, show_power_min, set_power_min, 0);
 
-static SENSOR_DEVICE_ATTR(power1_input, S_IRUGO, show_power, NULL, 0);
+static SENSOR_DEVICE_ATTR(power1_input, 0644, show_power_input, set_power_input, 0);
 
 static struct attribute *ltc2946_attrs[] = {
 	&sensor_dev_attr_power1_max.dev_attr.attr,
