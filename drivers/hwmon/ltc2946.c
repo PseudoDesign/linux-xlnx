@@ -45,7 +45,6 @@ static ssize_t show_power_min(struct device *dev, struct device_attribute *devat
 	return 0;
 }
 
-
 static ssize_t set_power_min(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
 {
 	return 0;
@@ -56,10 +55,6 @@ static ssize_t show_power_input(struct device *dev, struct device_attribute *dev
 	return 0;
 }
 
-static ssize_t set_power_input(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
-{
-	return 0;
-}
 
 /* Sensor attributes supported by this device */
 
@@ -67,7 +62,7 @@ static SENSOR_DEVICE_ATTR(power1_max, 0644, show_power_max, set_power_max, 0);
 
 static SENSOR_DEVICE_ATTR(power1_min, 0644, show_power_min, set_power_min, 0);
 
-static SENSOR_DEVICE_ATTR(power1_input, 0644, show_power_input, set_power_input, 0);
+static SENSOR_DEVICE_ATTR(power1_input, 0444, show_power_input, NULL, 0);
 
 static struct attribute *ltc2946_attrs[] = {
 	&sensor_dev_attr_power1_max.dev_attr.attr,
