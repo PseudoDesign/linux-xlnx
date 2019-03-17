@@ -33,7 +33,10 @@
 #define REG_POWER			0x05
 #define POWER_VALUE_TO_NWATT		31250
 
-
+#define REG_VOLTAGE_MAX			0x20
+#define REG_VOLTAGE_MIN			0x22
+#define REG_VOLTAGE			0x1E
+#define VOLTAGE_VALUE_TO_MVOLT		25
 
 struct ltc2946_data {
         struct i2c_client *client;
@@ -62,6 +65,27 @@ static int write_uint24(struct i2c_client *client, u8 address, unsigned int valu
 	return i2c_smbus_write_i2c_block_data(client, address, 3, bytes);
 }
 
+static unsigned int read_uint12(struct i2c_client *client, u8 address)
+{
+	u8 bytes[2];
+
+	i2c_smbus_read_i2c_block_data(client, address, 2, bytes);
+
+	return 0xFFF & ((0xFF0 & (bytes[0] << 4)) + (0xF & (bytes[1] >> 4)));
+}
+
+static int write_uint12(struct i2c_client *client, u8 address, unsigned int value)
+{
+	unsigned int input = clamp_val(value, 0, 0xFFF);
+
+	u8 bytes[] = {
+		0xFF & (input >> 4),
+		0x0F & (input << 4)
+	};
+
+	return i2c_smbus_write_i2c_block_data(client, address, 2, bytes);
+}
+
 /* Functions supporting the sensor attributes */
 
 /* Power Attributes */
@@ -88,7 +112,7 @@ static ssize_t set_power_value(struct device *dev, u8 address, struct device_att
 	input *= 1000;
         input /= POWER_VALUE_TO_NWATT;
 
-	pr_err("LTC2946 - Writing power value to %ld to reg 0x%02x", input, address);        
+	pr_err("LTC2946 - Writing power value to %ld to reg 0x%02x", input, address);
 
 	retval = write_uint24(data->client, address, (unsigned int)input);
 
@@ -123,19 +147,81 @@ static ssize_t show_power_input(struct device *dev, struct device_attribute *dev
 	return show_power_value(dev, REG_POWER, devattr, buf);
 }
 
+/* Voltage Attributes */
+
+static ssize_t show_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
+{
+	pr_err("LTC2946 - Reading voltage value from reg 0x%02x", address);
+	struct ltc2946_data *data = dev_get_drvdata(dev);
+        unsigned long output = read_uint12(data->client, address) * VOLTAGE_VALUE_TO_MVOLT;
+	pr_err("LTC2946 - got voltage value %ld from 0x%02x", output, address);
+        return sprintf(buf, "%ld\n", output);
+}
+
+static ssize_t set_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, const char *buf, size_t count)
+{
+	pr_err("LTC2946 - Writing voltage value to reg 0x%02x", address);
+	long input;
+        int retval;
+        struct ltc2946_data *data = dev_get_drvdata(dev);
+
+	if (kstrtol(buf, 10, &input))
+		return -EINVAL;
+
+  input /= VOLTAGE_VALUE_TO_MVOLT;
+
+	pr_err("LTC2946 - Writing voltage value to %ld to reg 0x%02x", input, address);
+
+	retval = write_uint12(data->client, address, (unsigned int)input);
+
+        if (retval < 0)
+                return retval;
+
+        return count;
+}
+
+static ssize_t show_voltage_max(struct device *dev, struct device_attribute *devattr, char *buf)
+{
+	return show_voltage_value(dev, REG_VOLTAGE_MAX, devattr, buf);
+}
+
+static ssize_t set_voltage_max(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
+{
+	return set_voltage_value(dev, REG_VOLTAGE_MAX, devattr, buf, count);
+}
+
+static ssize_t show_voltage_min(struct device *dev, struct device_attribute *devattr, char *buf)
+{
+	return show_voltage_value(dev, REG_VOLTAGE_MIN, devattr, buf);
+}
+
+static ssize_t set_voltage_min(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
+{
+	return set_voltage_value(dev, REG_VOLTAGE_MIN, devattr, buf, count);
+}
+
+static ssize_t show_voltage_input(struct device *dev, struct device_attribute *devattr, char *buf)
+{
+	return show_voltage_value(dev, REG_VOLTAGE, devattr, buf);
+}
 
 /* Sensor attributes supported by this device */
 
 static SENSOR_DEVICE_ATTR(power1_max, 0644, show_power_max, set_power_max, 0);
-
 static SENSOR_DEVICE_ATTR(power1_min, 0644, show_power_min, set_power_min, 0);
-
 static SENSOR_DEVICE_ATTR(power1_input, 0444, show_power_input, NULL, 0);
+
+static SENSOR_DEVICE_ATTR(in1_max, 0644, show_voltage_max, set_voltage_max, 0);
+static SENSOR_DEVICE_ATTR(in1_min, 0644, show_voltage_min, set_voltage_min, 0);
+static SENSOR_DEVICE_ATTR(in1_input, 0444, show_voltage_input, NULL, 0);
 
 static struct attribute *ltc2946_attrs[] = {
 	&sensor_dev_attr_power1_max.dev_attr.attr,
-        &sensor_dev_attr_power1_min.dev_attr.attr,
-        &sensor_dev_attr_power1_input.dev_attr.attr,
+	&sensor_dev_attr_power1_min.dev_attr.attr,
+	&sensor_dev_attr_power1_input.dev_attr.attr,
+	&sensor_dev_attr_in1_max.dev_attr.attr,
+	&sensor_dev_attr_in1_min.dev_attr.attr,
+	&sensor_dev_attr_in1_input.dev_attr.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(ltc2946);
@@ -207,4 +293,3 @@ module_i2c_driver(ltc2946_driver);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Adam Schafer <adam@pseudo.design>");
 MODULE_DESCRIPTION("LTC2946 Driver");
-
