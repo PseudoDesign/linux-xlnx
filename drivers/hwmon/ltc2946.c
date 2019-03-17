@@ -32,7 +32,7 @@
 #define REG_POWER_MIN			0x0B
 #define REG_POWER			0x05
 
-#define POWER_VALUE_TO_UWATT		31.25
+#define POWER_VALUE_TO_NWATT		31250
 
 struct ltc2946_data {
         struct i2c_client *client;
@@ -41,14 +41,25 @@ struct ltc2946_data {
 /* Functions supporting the i2c transactions */
 static unsigned int read_uint24(struct i2c_client *client, u8 address)
 {
-	return 0;
+	u8 bytes[3];
+
+	i2c_smbus_read_i2c_block_data(client, address, 3, bytes);
+
+	return (bytes[0] << 16) | (bytes[1] << 8) | bytes[2];
 }
 
 static int write_uint24(struct i2c_client *client, u8 address, unsigned int value)
 {
-	return 0;
-}
+	unsigned int input = clamp_val(value, 0, 0xFFFFFF);
 
+	u8 bytes[] = {
+		0xFF & (input >> 16),
+		0xFF & (input >> 8),
+		0xFF & input,
+	};
+
+	return i2c_smbus_write_i2c_block_data(client, address, 3, bytes);
+}
 
 /* Functions supporting the sensor attributes */
 
@@ -57,9 +68,29 @@ static int write_uint24(struct i2c_client *client, u8 address, unsigned int valu
 static ssize_t show_power_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
 {
 	struct ltc2946_data *data = dev_get_drvdata(dev);
-        unsigned long output = read_uint24(data->client, address) * POWER_VALUE_TO_UWATT;
+        unsigned long output = read_uint24(data->client, address) * POWER_VALUE_TO_NWATT;
 
-        return sprintf(buf, "%ld\n", output);
+        return sprintf(buf, "%ld\n", output / 1000);
+}
+
+static ssize_t set_power_value(struct device *dev, u8 address, struct device_attribute *devattr, const char *buf, size_t count)
+{
+	long input;
+        int retval;
+        struct ltc2946_data *data = dev_get_drvdata(dev);
+
+	if (kstrtol(buf, count, &input))
+		return -EINVAL;
+
+	input *= 1000;
+        input /= POWER_VALUE_TO_NWATT;
+        
+	retval = write_uint24(data->client, address, (unsigned int)input);
+
+        if (retval < 0)
+                return retval;
+
+        return count;
 }
 
 static ssize_t show_power_max(struct device *dev, struct device_attribute *devattr, char *buf)
@@ -69,24 +100,7 @@ static ssize_t show_power_max(struct device *dev, struct device_attribute *devat
 
 static ssize_t set_power_max(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
 {
-	long input;
-	int retval;
-	struct ltc2946_data *data = dev_get_drvdata(dev);
-
-	if (kstrtol(buf, count, &input))
-		return -EINVAL;
-
-	input /= POWER_VALUE_TO_UWATT;
-
-	input = clamp_val(input, 0, 0xFFFFFF);
-	
-	retval = write_uint24(data->client, REG_POWER_MAX, (unsigned int)input);
-	
-	if (retval < 0)
-		return retval;
-	
-	return count;
-
+	return set_power_value(dev, REG_POWER_MAX, devattr, buf, count);
 }
 
 static ssize_t show_power_min(struct device *dev, struct device_attribute *devattr, char *buf)
@@ -96,7 +110,7 @@ static ssize_t show_power_min(struct device *dev, struct device_attribute *devat
 
 static ssize_t set_power_min(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
 {
-	return 0;
+	return set_power_value(dev, REG_POWER_MIN, devattr, buf, count);
 }
 
 static ssize_t show_power_input(struct device *dev, struct device_attribute *devattr, char *buf)
