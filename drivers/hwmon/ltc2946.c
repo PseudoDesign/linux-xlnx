@@ -28,21 +28,68 @@
 #include <linux/i2c.h>
 #include <linux/printk.h>
 
+#define REG_POWER_MAX			0x08
+#define REG_POWER_MIN			0x0B
+#define REG_POWER			0x05
+
+#define POWER_VALUE_TO_UWATT		31.25
+
+struct ltc2946_data {
+        struct i2c_client *client;
+};
+
+/* Functions supporting the i2c transactions */
+static unsigned int read_uint24(struct i2c_client *client, u8 address)
+{
+	return 0;
+}
+
+static int write_uint24(struct i2c_client *client, u8 address, unsigned int value)
+{
+	return 0;
+}
+
+
 /* Functions supporting the sensor attributes */
+
+/* Power Attributes */
 
 static ssize_t show_power_max(struct device *dev, struct device_attribute *devattr, char *buf)
 {
-	return 0;
+	struct ltc2946_data *data = dev_get_drvdata(dev);
+	unsigned long output = read_uint24(data->client, REG_POWER_MAX) * POWER_VALUE_TO_UWATT;
+
+	return sprintf(buf, "%ld\n", output);
 }
 
 static ssize_t set_power_max(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
 {
-	return 0;
+	long input;
+	int retval;
+	struct ltc2946_data *data = dev_get_drvdata(dev);
+
+	if (kstrtol(buf, count, &input))
+		return -EINVAL;
+
+	input /= POWER_VALUE_TO_UWATT;
+
+	input = clamp_val(input, 0, 0xFFFFFF);
+	
+	retval = write_uint24(data->client, REG_POWER_MAX, (unsigned int)input);
+	
+	if (retval < 0)
+		return retval;
+	
+	return count;
+
 }
 
 static ssize_t show_power_min(struct device *dev, struct device_attribute *devattr, char *buf)
 {
-	return 0;
+	struct ltc2946_data *data = dev_get_drvdata(dev);
+        unsigned long output = read_uint24(data->client, REG_POWER_MAX) * POWER_VALUE_TO_UWATT;
+
+        return sprintf(buf, "%ld\n", output);
 }
 
 static ssize_t set_power_min(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
@@ -52,7 +99,10 @@ static ssize_t set_power_min(struct device *dev, struct device_attribute *devatt
 
 static ssize_t show_power_input(struct device *dev, struct device_attribute *devattr, char *buf)
 {
-	return 0;
+	struct ltc2946_data *data = dev_get_drvdata(dev);
+        unsigned long output = read_uint24(data->client, REG_POWER_MAX) * POWER_VALUE_TO_UWATT;
+
+        return sprintf(buf, "%ld\n", output);
 }
 
 
@@ -71,12 +121,6 @@ static struct attribute *ltc2946_attrs[] = {
 	NULL,
 };
 ATTRIBUTE_GROUPS(ltc2946);
-
-
-
-struct ltc2946_data {
-	struct i2c_client *client;
-};
 
 static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
