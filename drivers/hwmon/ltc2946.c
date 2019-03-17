@@ -92,16 +92,13 @@ static int write_uint12(struct i2c_client *client, u8 address, unsigned int valu
 
 static ssize_t show_power_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
 {
-	pr_err("LTC2946 - Reading power value from reg 0x%02x", address);
 	struct ltc2946_data *data = dev_get_drvdata(dev);
         unsigned long output = read_uint24(data->client, address) * POWER_VALUE_TO_NWATT;
-	pr_err("LTC2946 - got power value %ld from 0x%02x", output/1000, address);
         return sprintf(buf, "%ld\n", output / 1000);
 }
 
 static ssize_t set_power_value(struct device *dev, u8 address, struct device_attribute *devattr, const char *buf, size_t count)
 {
-	pr_err("LTC2946 - Writing power value to reg 0x%02x", address);
 	long input;
         int retval;
         struct ltc2946_data *data = dev_get_drvdata(dev);
@@ -111,8 +108,6 @@ static ssize_t set_power_value(struct device *dev, u8 address, struct device_att
 
 	input *= 1000;
         input /= POWER_VALUE_TO_NWATT;
-
-	pr_err("LTC2946 - Writing power value to %ld to reg 0x%02x", input, address);
 
 	retval = write_uint24(data->client, address, (unsigned int)input);
 
@@ -151,16 +146,13 @@ static ssize_t show_power_input(struct device *dev, struct device_attribute *dev
 
 static ssize_t show_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
 {
-	pr_err("LTC2946 - Reading voltage value from reg 0x%02x", address);
 	struct ltc2946_data *data = dev_get_drvdata(dev);
         unsigned long output = read_uint12(data->client, address) * VOLTAGE_VALUE_TO_MVOLT;
-	pr_err("LTC2946 - got voltage value %ld from 0x%02x", output, address);
         return sprintf(buf, "%ld\n", output);
 }
 
 static ssize_t set_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, const char *buf, size_t count)
 {
-	pr_err("LTC2946 - Writing voltage value to reg 0x%02x", address);
 	long input;
         int retval;
         struct ltc2946_data *data = dev_get_drvdata(dev);
@@ -168,12 +160,8 @@ static ssize_t set_voltage_value(struct device *dev, u8 address, struct device_a
 	if (kstrtol(buf, 10, &input))
 		return -EINVAL;
 
-  input /= VOLTAGE_VALUE_TO_MVOLT;
-
-	pr_err("LTC2946 - Writing voltage value to %ld to reg 0x%02x", input, address);
-
+	input /= VOLTAGE_VALUE_TO_MVOLT;
 	retval = write_uint12(data->client, address, (unsigned int)input);
-
         if (retval < 0)
                 return retval;
 
@@ -232,8 +220,6 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
 	struct device *hwmon_dev;
 	struct ltc2946_data *data;
 
-	pr_err("Probing ltc2946");
-
 	dev_info(&client->dev, "%s chip found\n", client->name);
 
 	// Allocate this driver's memory
@@ -241,14 +227,9 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
 	if (!data)
 		return -ENOMEM;
 
-	// INITIALIZE data HERE
-	pr_err("Probing ltc2946");
-
 	// Register the i2c client
 	i2c_set_clientdata(client, data);
 	data->client = client;
-
-	// INITIALIZE DEVICE HERE
 
 	// Register sysfs hooks
 	hwmon_dev = devm_hwmon_device_register_with_groups(i2c_dev, client->name,
