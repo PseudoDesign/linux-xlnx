@@ -31,8 +31,9 @@
 #define REG_POWER_MAX			0x08
 #define REG_POWER_MIN			0x0B
 #define REG_POWER			0x05
-
 #define POWER_VALUE_TO_NWATT		31250
+
+
 
 struct ltc2946_data {
         struct i2c_client *client;
@@ -81,7 +82,7 @@ static ssize_t set_power_value(struct device *dev, u8 address, struct device_att
         int retval;
         struct ltc2946_data *data = dev_get_drvdata(dev);
 
-	if (kstrtol(buf, count, &input))
+	if (kstrtol(buf, 10, &input))
 		return -EINVAL;
 
 	input *= 1000;
