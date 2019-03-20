@@ -38,8 +38,15 @@
 #define REG_VOLTAGE			0x1E
 #define VOLTAGE_VALUE_TO_MVOLT		25
 
+#define REG_SENSE_MAX			0x16
+#define REG_SENSE_MIN			0x18
+#define REG_SENSE			0x14
+#define SENSE_RESISTANCE_MICROOHM_DEFAULT 1000
+#define SENSE_VALUE_TO_NANOVOLT		25000
+
 struct ltc2946_data {
         struct i2c_client *client;
+	uint32_t sense_resistance;
 };
 
 /* Functions supporting the i2c transactions */
@@ -193,6 +200,64 @@ static ssize_t show_voltage_input(struct device *dev, struct device_attribute *d
 	return show_voltage_value(dev, REG_VOLTAGE, devattr, buf);
 }
 
+/* Current registers */
+
+static ssize_t show_current_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
+{
+        struct ltc2946_data *data = dev_get_drvdata(dev);
+        unsigned long output = read_uint12(data->client, address) * SENSE_VALUE_TO_NANOVOLT;
+	// We have nanovolts in "output".  Divide by the sense resistance in microohm to get the current in milliamps
+	output /= data->sense_resistance;	
+        return sprintf(buf, "%ld\n", output);
+}
+
+static ssize_t set_current_value(struct device *dev, u8 address, struct device_attribute *devattr, const char *buf, size_t count)
+{
+        long input;
+        int retval;
+        struct ltc2946_data *data = dev_get_drvdata(dev);
+
+        if (kstrtol(buf, 10, &input))
+                return -EINVAL;
+
+        //Multiply our current input (milliamps) by our sense resiancte (microohm) to get the voltage in nanovolts
+	input = input * data->sense_resistance;
+	// Divide by nanovolts per count to get the correct register value
+	input = input / SENSE_VALUE_TO_NANOVOLT;
+	retval = write_uint12(data->client, address, (unsigned int)input);
+        if (retval < 0)
+                return retval;
+
+        return count;
+}
+
+
+static ssize_t show_current_max(struct device *dev, struct device_attribute *devattr, char *buf)
+{
+        return show_current_value(dev, REG_SENSE_MAX, devattr, buf);
+}
+
+static ssize_t set_current_max(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
+{
+        return set_current_value(dev, REG_SENSE_MAX, devattr, buf, count);
+}
+
+static ssize_t show_current_min(struct device *dev, struct device_attribute *devattr, char *buf)
+{
+        return show_current_value(dev, REG_SENSE_MIN, devattr, buf);
+}
+
+static ssize_t set_current_min(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
+{
+        return set_current_value(dev, REG_SENSE_MIN, devattr, buf, count);
+}
+
+static ssize_t show_current_input(struct device *dev, struct device_attribute *devattr, char *buf)
+{
+        return show_current_value(dev, REG_VOLTAGE, devattr, buf);
+}
+
+
 /* Sensor attributes supported by this device */
 
 static SENSOR_DEVICE_ATTR(power1_max, 0644, show_power_max, set_power_max, 0);
@@ -203,6 +268,10 @@ static SENSOR_DEVICE_ATTR(in1_max, 0644, show_voltage_max, set_voltage_max, 0);
 static SENSOR_DEVICE_ATTR(in1_min, 0644, show_voltage_min, set_voltage_min, 0);
 static SENSOR_DEVICE_ATTR(in1_input, 0444, show_voltage_input, NULL, 0);
 
+static SENSOR_DEVICE_ATTR(curr1_max, 0644, show_current_max, set_current_max, 0);
+static SENSOR_DEVICE_ATTR(curr1_min, 0644, show_current_min, set_current_min, 0);
+static SENSOR_DEVICE_ATTR(curr1_input, 0444, show_current_input, NULL, 0);
+
 static struct attribute *ltc2946_attrs[] = {
 	&sensor_dev_attr_power1_max.dev_attr.attr,
 	&sensor_dev_attr_power1_min.dev_attr.attr,
@@ -210,6 +279,9 @@ static struct attribute *ltc2946_attrs[] = {
 	&sensor_dev_attr_in1_max.dev_attr.attr,
 	&sensor_dev_attr_in1_min.dev_attr.attr,
 	&sensor_dev_attr_in1_input.dev_attr.attr,
+	&sensor_dev_attr_curr1_max.dev_attr.attr,
+        &sensor_dev_attr_curr1_min.dev_attr.attr,
+        &sensor_dev_attr_curr1_input.dev_attr.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(ltc2946);
@@ -219,6 +291,7 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
 	struct device *i2c_dev = &client->dev;
 	struct device *hwmon_dev;
 	struct ltc2946_data *data;
+	int retval;
 
 	dev_info(&client->dev, "%s chip found\n", client->name);
 
@@ -230,6 +303,12 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
 	// Register the i2c client
 	i2c_set_clientdata(client, data);
 	data->client = client;
+
+	// Get our sense resistance property, or use the default
+	retval = of_property_read_u32(client->dev.of_node, "sense-resistance-microohm",
+				  &data->sense_resistance);
+	if (retval)
+		data->sense_resistance = SENSE_RESISTANCE_MICROOHM_DEFAULT;
 
 	// Register sysfs hooks
 	hwmon_dev = devm_hwmon_device_register_with_groups(i2c_dev, client->name,
