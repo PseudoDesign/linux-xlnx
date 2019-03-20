@@ -52,10 +52,10 @@ struct ltc2946_data {
 /* Functions supporting the i2c transactions */
 static unsigned int read_uint24(struct i2c_client *client, u8 address)
 {
-	u8 bytes[3];
+	u8 bytes[3] = {0, 0, 0};
 
 	i2c_smbus_read_i2c_block_data(client, address, 3, bytes);
-	pr_err("Read %d, %d, %d from register %d", bytes[0], bytes[1], bytes[2], address);
+	pr_err("Read %x, %x, %x from register %x", bytes[0], bytes[1], bytes[2], address);
 	return (bytes[0] << 16) | (bytes[1] << 8) | bytes[2];
 }
 
@@ -69,16 +69,16 @@ static int write_uint24(struct i2c_client *client, u8 address, unsigned int valu
 		0xFF & input,
 	};
 
-	pr_err("Writing %d, %d, %d to register %d", bytes[0], bytes[1], bytes[2], address);
+	pr_err("Writing %x, %x, %x to register %x", bytes[0], bytes[1], bytes[2], address);
 	return i2c_smbus_write_i2c_block_data(client, address, 3, bytes);
 }
 
 static unsigned int read_uint12(struct i2c_client *client, u8 address)
 {
-	u8 bytes[2];
+	u8 bytes[2] = {0, 0};
 
 	i2c_smbus_read_i2c_block_data(client, address, 2, bytes);
-	pr_err("Read %d, %d from register %d", bytes[0], bytes[1], address);
+	pr_err("Read %x, %x from register %x", bytes[0], bytes[1], address);
 
 	return 0xFFF & ((0xFF0 & (bytes[0] << 4)) + (0xF & (bytes[1] >> 4)));
 }
@@ -92,7 +92,7 @@ static int write_uint12(struct i2c_client *client, u8 address, unsigned int valu
 		0xF0 & (input << 4)
 	};
 
-	pr_err("Writing %d, %d to register %d", bytes[0], bytes[1], address);
+	pr_err("Writing %x, %x to register %x", bytes[0], bytes[1], address);
 
 	return i2c_smbus_write_i2c_block_data(client, address, 2, bytes);
 }
@@ -104,7 +104,9 @@ static int write_uint12(struct i2c_client *client, u8 address, unsigned int valu
 static ssize_t show_power_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
 {
 	struct ltc2946_data *data = dev_get_drvdata(dev);
-        unsigned long output = read_uint24(data->client, address) * POWER_VALUE_TO_NWATT;
+        unsigned long output = read_uint24(data->client, address);
+	pr_err("Read (%ld) from power reg", output);
+	output *= POWER_VALUE_TO_NWATT;
         return sprintf(buf, "%ld\n", output / 1000);
 }
 
@@ -158,7 +160,9 @@ static ssize_t show_power_input(struct device *dev, struct device_attribute *dev
 static ssize_t show_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
 {
 	struct ltc2946_data *data = dev_get_drvdata(dev);
-        unsigned long output = read_uint12(data->client, address) * VOLTAGE_VALUE_TO_MVOLT;
+        unsigned long output = read_uint12(data->client, address);
+	pr_err("Read (%ld) from voltage reg", output);
+	output *= VOLTAGE_VALUE_TO_MVOLT;
         return sprintf(buf, "%ld\n", output);
 }
 
