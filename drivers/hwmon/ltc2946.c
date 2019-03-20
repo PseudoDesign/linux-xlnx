@@ -55,7 +55,7 @@ static unsigned int read_uint24(struct i2c_client *client, u8 address)
 	u8 bytes[3];
 
 	i2c_smbus_read_i2c_block_data(client, address, 3, bytes);
-
+	pr_err("Read %d, %d, %d from register %d", bytes[0], bytes[1], bytes[2], address);
 	return (bytes[0] << 16) | (bytes[1] << 8) | bytes[2];
 }
 
@@ -69,6 +69,7 @@ static int write_uint24(struct i2c_client *client, u8 address, unsigned int valu
 		0xFF & input,
 	};
 
+	pr_err("Writing %d, %d, %d to register %d", bytes[0], bytes[1], bytes[2], address);
 	return i2c_smbus_write_i2c_block_data(client, address, 3, bytes);
 }
 
@@ -77,6 +78,7 @@ static unsigned int read_uint12(struct i2c_client *client, u8 address)
 	u8 bytes[2];
 
 	i2c_smbus_read_i2c_block_data(client, address, 2, bytes);
+	pr_err("Read %d, %d from register %d", bytes[0], bytes[1], address);
 
 	return 0xFFF & ((0xFF0 & (bytes[0] << 4)) + (0xF & (bytes[1] >> 4)));
 }
@@ -89,6 +91,8 @@ static int write_uint12(struct i2c_client *client, u8 address, unsigned int valu
 		0xFF & (input >> 4),
 		0x0F & (input << 4)
 	};
+
+	pr_err("Writing %d, %d to register %d", bytes[0], bytes[1], address);
 
 	return i2c_smbus_write_i2c_block_data(client, address, 2, bytes);
 }
