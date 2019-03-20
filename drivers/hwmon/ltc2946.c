@@ -89,7 +89,7 @@ static int write_uint12(struct i2c_client *client, u8 address, unsigned int valu
 
 	u8 bytes[] = {
 		0xFF & (input >> 4),
-		0x0F & (input << 4)
+		0xF0 & (input << 4)
 	};
 
 	pr_err("Writing %d, %d to register %d", bytes[0], bytes[1], address);
