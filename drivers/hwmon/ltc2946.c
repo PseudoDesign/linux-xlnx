@@ -300,6 +300,7 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
 	struct device *hwmon_dev;
 	struct ltc2946_data *data;
 	int retval;
+	u8 byte;
 
 	dev_info(&client->dev, "%s chip found\n", client->name);
 
@@ -321,6 +322,10 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
 	// Register sysfs hooks
 	hwmon_dev = devm_hwmon_device_register_with_groups(i2c_dev, client->name,
 							   data, ltc2946_groups);
+
+	//Read CTRLA register
+	i2c_smbus_read_i2c_block_data(client, 0, 1, &byte);
+	pr_err("read 0x%02x from CTRLA", byte);
 
 	if (IS_ERR(hwmon_dev))
 	{
