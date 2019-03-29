@@ -33,9 +33,9 @@
 #define REG_POWER			0x05
 #define POWER_VALUE_TO_NWATT		31250
 
-#define REG_VOLTAGE_MAX			0x20
-#define REG_VOLTAGE_MIN			0x22
-#define REG_VOLTAGE			0x1E
+#define REG_VOLTAGE_MAX			0x28
+#define REG_VOLTAGE_MIN			0x2A
+#define REG_VOLTAGE			0x2C
 #define VOLTAGE_VALUE_TO_MVOLT		25
 
 #define REG_SENSE_MAX			0x16
@@ -47,6 +47,8 @@
 struct ltc2946_data {
         struct i2c_client *client;
 	uint32_t sense_resistance;
+	uint32_t adin_r1;
+	uint32_t adin_r2;
 };
 
 /* Functions supporting the i2c transactions */
@@ -163,6 +165,8 @@ static ssize_t show_voltage_value(struct device *dev, u8 address, struct device_
         unsigned long output = read_uint12(data->client, address);
 	pr_err("Read (%ld) from voltage reg", output);
 	output *= VOLTAGE_VALUE_TO_MVOLT;
+	// Apply the voltage divider
+	output = (output * (data->adin_r1 + data->adin_r2)) / data->adin_r2;
         return sprintf(buf, "%ld\n", output);
 }
 
@@ -176,6 +180,7 @@ static ssize_t set_voltage_value(struct device *dev, u8 address, struct device_a
 		return -EINVAL;
 
 	input /= VOLTAGE_VALUE_TO_MVOLT;
+	input = (input * data->adin_r2) / (data->adin_r1 + data->adin_r2);
 	retval = write_uint12(data->client, address, (unsigned int)input);
         if (retval < 0)
                 return retval;
@@ -262,7 +267,7 @@ static ssize_t set_current_min(struct device *dev, struct device_attribute *deva
 
 static ssize_t show_current_input(struct device *dev, struct device_attribute *devattr, char *buf)
 {
-        return show_current_value(dev, REG_VOLTAGE, devattr, buf);
+        return show_current_value(dev, REG_SENSE, devattr, buf);
 }
 
 
@@ -319,13 +324,25 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
 	if (retval)
 		data->sense_resistance = SENSE_RESISTANCE_MICROOHM_DEFAULT;
 
+	retval = of_property_read_u32(client->dev.of_node, "adin-div-r1",
+                                  &data->adin_r1);
+
+	if (retval)
+                data->adin_r1 = 1;
+
+	retval = of_property_read_u32(client->dev.of_node, "adin-div-r2",
+                                  &data->adin_r2);
+
+        if (retval)
+                data->adin_r2 = 1000;
+
 	// Register sysfs hooks
 	hwmon_dev = devm_hwmon_device_register_with_groups(i2c_dev, client->name,
 							   data, ltc2946_groups);
 
-	//Read CTRLA register
-	i2c_smbus_read_i2c_block_data(client, 0, 1, &byte);
-	pr_err("read 0x%02x from CTRLA", byte);
+	//Set CTRLA register to use ADIN
+	byte = 0x08;
+	i2c_smbus_write_i2c_block_data(client, 0, 1, &byte);
 
 	if (IS_ERR(hwmon_dev))
 	{
