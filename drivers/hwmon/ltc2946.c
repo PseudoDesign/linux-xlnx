@@ -36,7 +36,7 @@
 #define REG_VOLTAGE_MAX			0x2C
 #define REG_VOLTAGE_MIN			0x2A
 #define REG_VOLTAGE			0x28
-#define VOLTAGE_VALUE_TO_MVOLT		25
+#define VOLTAGE_VALUE_TO_MICROVOLT	500
 
 #define REG_SENSE_MAX			0x16
 #define REG_SENSE_MIN			0x18
@@ -164,7 +164,8 @@ static ssize_t show_voltage_value(struct device *dev, u8 address, struct device_
 	struct ltc2946_data *data = dev_get_drvdata(dev);
         unsigned long output = read_uint12(data->client, address);
 	pr_err("Read (%ld) from voltage reg", output);
-	output *= VOLTAGE_VALUE_TO_MVOLT;
+	output *= VOLTAGE_VALUE_TO_MICROVOLT;
+	output /= 1000;
 	// Apply the voltage divider
 	output = (output * (data->adin_r1 + data->adin_r2)) / data->adin_r2;
         return sprintf(buf, "%ld\n", output);
@@ -179,7 +180,8 @@ static ssize_t set_voltage_value(struct device *dev, u8 address, struct device_a
 	if (kstrtol(buf, 10, &input))
 		return -EINVAL;
 
-	input /= VOLTAGE_VALUE_TO_MVOLT;
+	input /= VOLTAGE_VALUE_TO_MICROVOLT;
+	input /= 1000;
 	input = (input * data->adin_r2) / (data->adin_r1 + data->adin_r2);
 	retval = write_uint12(data->client, address, (unsigned int)input);
         if (retval < 0)
