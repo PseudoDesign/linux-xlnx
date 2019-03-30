@@ -166,7 +166,9 @@ static ssize_t show_voltage_value(struct device *dev, u8 address, struct device_
 	pr_err("Read (%ld) from voltage reg", output);
 	output *= VOLTAGE_VALUE_TO_MICROVOLT;
 	output /= 1000;
+	pr_err("Read %ld mV at Vsense", output);
 	// Apply the voltage divider
+	pr_err("r1=%d, r2=%d", data->adin_r1, data->adin_r2);
 	output = (output * (data->adin_r1 + data->adin_r2)) / data->adin_r2;
         return sprintf(buf, "%ld\n", output);
 }
