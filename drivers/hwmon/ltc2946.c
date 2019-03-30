@@ -33,9 +33,9 @@
 #define REG_POWER			0x05
 #define POWER_VALUE_TO_NWATT		31250
 
-#define REG_VOLTAGE_MAX			0x28
+#define REG_VOLTAGE_MAX			0x2C
 #define REG_VOLTAGE_MIN			0x2A
-#define REG_VOLTAGE			0x2C
+#define REG_VOLTAGE			0x28
 #define VOLTAGE_VALUE_TO_MVOLT		25
 
 #define REG_SENSE_MAX			0x16
@@ -341,7 +341,7 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
 							   data, ltc2946_groups);
 
 	//Set CTRLA register to use ADIN
-	byte = 0x08;
+	byte = 0x10;
 	i2c_smbus_write_i2c_block_data(client, 0, 1, &byte);
 
 	if (IS_ERR(hwmon_dev))
