@@ -33,10 +33,10 @@
 #define REG_POWER			0x05
 #define POWER_VALUE_TO_NWATT		31250
 
-#define REG_VOLTAGE_MAX			0x2C
-#define REG_VOLTAGE_MIN			0x2A
-#define REG_VOLTAGE			0x28
-#define VOLTAGE_VALUE_TO_MICROVOLT	500
+#define REG_ADIN_VOLTAGE_MAX			0x2C
+#define REG_ADIN_VOLTAGE_MIN			0x2A
+#define REG_ADIN_VOLTAGE			0x28
+#define ADIN_VOLTAGE_VALUE_TO_MICROVOLT	500
 
 #define REG_SENSE_MAX			0x16
 #define REG_SENSE_MIN			0x18
@@ -49,6 +49,7 @@ struct ltc2946_data {
 	uint32_t sense_resistance;
 	uint32_t adin_r1;
 	uint32_t adin_r2;
+	bool use_vin_voltage;
 };
 
 /* Functions supporting the i2c transactions */
@@ -159,12 +160,12 @@ static ssize_t show_power_input(struct device *dev, struct device_attribute *dev
 
 /* Voltage Attributes */
 
-static ssize_t show_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
+static ssize_t show_adin_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
 {
 	struct ltc2946_data *data = dev_get_drvdata(dev);
         unsigned long output = read_uint12(data->client, address);
 	//pr_err("Read (%ld) from voltage reg", output);
-	output *= VOLTAGE_VALUE_TO_MICROVOLT;
+	output *= ADIN_VOLTAGE_VALUE_TO_MICROVOLT;
 	output /= 1000;
 	//pr_err("Read %ld mV at Vsense", output);
 	// Apply the voltage divider
@@ -173,7 +174,7 @@ static ssize_t show_voltage_value(struct device *dev, u8 address, struct device_
         return sprintf(buf, "%ld\n", output);
 }
 
-static ssize_t set_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, const char *buf, size_t count)
+static ssize_t set_adin_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, const char *buf, size_t count)
 {
 	long input;
         int retval;
@@ -182,7 +183,7 @@ static ssize_t set_voltage_value(struct device *dev, u8 address, struct device_a
 	if (kstrtol(buf, 10, &input))
 		return -EINVAL;
 
-	input /= VOLTAGE_VALUE_TO_MICROVOLT;
+	input /= ADIN_VOLTAGE_VALUE_TO_MICROVOLT;
 	input /= 1000;
 	input = (input * data->adin_r2) / (data->adin_r1 + data->adin_r2);
 	retval = write_uint12(data->client, address, (unsigned int)input);
@@ -194,27 +195,27 @@ static ssize_t set_voltage_value(struct device *dev, u8 address, struct device_a
 
 static ssize_t show_voltage_max(struct device *dev, struct device_attribute *devattr, char *buf)
 {
-	return show_voltage_value(dev, REG_VOLTAGE_MAX, devattr, buf);
+	return show_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MAX, devattr, buf);
 }
 
 static ssize_t set_voltage_max(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
 {
-	return set_voltage_value(dev, REG_VOLTAGE_MAX, devattr, buf, count);
+	return set_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MAX, devattr, buf, count);
 }
 
 static ssize_t show_voltage_min(struct device *dev, struct device_attribute *devattr, char *buf)
 {
-	return show_voltage_value(dev, REG_VOLTAGE_MIN, devattr, buf);
+	return show_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MIN, devattr, buf);
 }
 
 static ssize_t set_voltage_min(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
 {
-	return set_voltage_value(dev, REG_VOLTAGE_MIN, devattr, buf, count);
+	return set_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MIN, devattr, buf, count);
 }
 
 static ssize_t show_voltage_input(struct device *dev, struct device_attribute *devattr, char *buf)
 {
-	return show_voltage_value(dev, REG_VOLTAGE, devattr, buf);
+	return show_adin_voltage_value(dev, REG_ADIN_VOLTAGE, devattr, buf);
 }
 
 /* Current registers */
@@ -348,8 +349,11 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
 							   data, ltc2946_groups);
 
 	//Set CTRLA register to use ADIN
-	byte = 0x10;
-	i2c_smbus_write_i2c_block_data(client, 0, 1, &byte);
+	if (!data->use_vin_voltage)
+	{
+		byte = 0x10;
+		i2c_smbus_write_i2c_block_data(client, 0, 1, &byte);
+	}
 
 	if (IS_ERR(hwmon_dev))
 	{
