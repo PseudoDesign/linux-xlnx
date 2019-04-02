@@ -340,6 +340,9 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
         if (retval)
                 data->adin_r2 = 1000;
 
+	data->use_vin_voltage = of_property_read_bool(client->dev.of_node, "use-vin-voltage",
+                                  &data->adin_r2);
+
 	// Register sysfs hooks
 	hwmon_dev = devm_hwmon_device_register_with_groups(i2c_dev, client->name,
 							   data, ltc2946_groups);
