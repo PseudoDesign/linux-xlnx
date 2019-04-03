@@ -160,6 +160,16 @@ static ssize_t show_power_input(struct device *dev, struct device_attribute *dev
 
 /* Voltage Attributes */
 
+static ssize_t show_vin_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
+{
+
+}
+
+static ssize_t set_adin_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, const char *buf, size_t count)
+{
+
+}
+
 static ssize_t show_adin_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
 {
 	struct ltc2946_data *data = dev_get_drvdata(dev);
@@ -195,27 +205,42 @@ static ssize_t set_adin_voltage_value(struct device *dev, u8 address, struct dev
 
 static ssize_t show_voltage_max(struct device *dev, struct device_attribute *devattr, char *buf)
 {
-	return show_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MAX, devattr, buf);
+	if(data->use_vin_voltage)
+		return show_vin_voltage_value(dev, REG_VIN_VOLTAGE_MAX, devattr, buf);
+	else
+		return show_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MAX, devattr, buf);
 }
 
 static ssize_t set_voltage_max(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
 {
-	return set_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MAX, devattr, buf, count);
+	if(data->use_vin_voltage)
+                return set_vin_voltage_value(dev, REG_VIN_VOLTAGE_MAX, devattr, buf);
+        else
+		return set_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MAX, devattr, buf, count);
 }
 
 static ssize_t show_voltage_min(struct device *dev, struct device_attribute *devattr, char *buf)
 {
-	return show_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MIN, devattr, buf);
+	if(data->use_vin_voltage)
+                return show_vin_voltage_value(dev, REG_VIN_VOLTAGE_MIN, devattr, buf);
+        else
+		return show_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MIN, devattr, buf);
 }
 
 static ssize_t set_voltage_min(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
 {
-	return set_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MIN, devattr, buf, count);
+	if(data->use_vin_voltage)
+                return set_vin_voltage_value(dev, REG_VIN_VOLTAGE_MIN, devattr, buf);
+        else
+		return set_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MIN, devattr, buf, count);
 }
 
 static ssize_t show_voltage_input(struct device *dev, struct device_attribute *devattr, char *buf)
 {
-	return show_adin_voltage_value(dev, REG_ADIN_VOLTAGE, devattr, buf);
+	if(data->use_vin_voltage)
+                return show_vin_voltage_value(dev, REG_VIN_VOLTAGE, devattr, buf);
+        else
+		return show_adin_voltage_value(dev, REG_ADIN_VOLTAGE, devattr, buf);
 }
 
 /* Current registers */
