@@ -38,9 +38,9 @@
 #define REG_ADIN_VOLTAGE			0x28
 #define ADIN_VOLTAGE_VALUE_TO_MICROVOLT	500
 
-#define REG_VOLTAGE_MAX			0x20
-#define REG_VOLTAGE_MIN			0x22
-#define REG_VOLTAGE			0x1E
+#define REG_VIN_VOLTAGE_MAX			0x20
+#define REG_VIN_VOLTAGE_MIN			0x22
+#define REG_VIN_VOLTAGE			0x1E
 #define VOLTAGE_VALUE_TO_MVOLT		25
 
 #define REG_SENSE_MAX			0x16
@@ -237,7 +237,7 @@ static ssize_t set_voltage_max(struct device *dev, struct device_attribute *deva
 {
 	struct ltc2946_data *data = dev_get_drvdata(dev);
 	if(data->use_vin_voltage)
-                return set_vin_voltage_value(dev, REG_VIN_VOLTAGE_MAX, devattr, buf);
+                return set_vin_voltage_value(dev, REG_VIN_VOLTAGE_MAX, devattr, buf, count);
         else
 		return set_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MAX, devattr, buf, count);
 }
@@ -255,7 +255,7 @@ static ssize_t set_voltage_min(struct device *dev, struct device_attribute *deva
 {
 	struct ltc2946_data *data = dev_get_drvdata(dev);
 	if(data->use_vin_voltage)
-                return set_vin_voltage_value(dev, REG_VIN_VOLTAGE_MIN, devattr, buf);
+                return set_vin_voltage_value(dev, REG_VIN_VOLTAGE_MIN, devattr, buf, count);
         else
 		return set_adin_voltage_value(dev, REG_ADIN_VOLTAGE_MIN, devattr, buf, count);
 }
@@ -392,8 +392,7 @@ static int ltc2946_probe(struct i2c_client *client, const struct i2c_device_id *
         if (retval)
                 data->adin_r2 = 1000;
 
-	data->use_vin_voltage = of_property_read_bool(client->dev.of_node, "use-vin-voltage",
-                                  &data->adin_r2);
+	data->use_vin_voltage = of_property_read_bool(client->dev.of_node, "use-vin-voltage");
 
 	// Register sysfs hooks
 	hwmon_dev = devm_hwmon_device_register_with_groups(i2c_dev, client->name,
