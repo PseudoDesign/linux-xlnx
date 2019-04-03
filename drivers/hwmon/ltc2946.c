@@ -38,6 +38,11 @@
 #define REG_ADIN_VOLTAGE			0x28
 #define ADIN_VOLTAGE_VALUE_TO_MICROVOLT	500
 
+#define REG_VOLTAGE_MAX			0x20
+#define REG_VOLTAGE_MIN			0x22
+#define REG_VOLTAGE			0x1E
+#define VOLTAGE_VALUE_TO_MVOLT		25
+
 #define REG_SENSE_MAX			0x16
 #define REG_SENSE_MIN			0x18
 #define REG_SENSE			0x14
@@ -162,12 +167,28 @@ static ssize_t show_power_input(struct device *dev, struct device_attribute *dev
 
 static ssize_t show_vin_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
 {
-
+	struct ltc2946_data *data = dev_get_drvdata(dev);
+        unsigned long output = read_uint12(data->client, address);
+	pr_err("Read (%ld) from voltage reg", output);
+	output *= VOLTAGE_VALUE_TO_MVOLT;
+        return sprintf(buf, "%ld\n", output);
 }
 
-static ssize_t set_adin_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, const char *buf, size_t count)
+static ssize_t set_vin_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, const char *buf, size_t count)
 {
+	long input;
+        int retval;
+        struct ltc2946_data *data = dev_get_drvdata(dev);
 
+	if (kstrtol(buf, 10, &input))
+		return -EINVAL;
+
+	input /= VOLTAGE_VALUE_TO_MVOLT;
+	retval = write_uint12(data->client, address, (unsigned int)input);
+        if (retval < 0)
+                return retval;
+
+        return count;
 }
 
 static ssize_t show_adin_voltage_value(struct device *dev, u8 address, struct device_attribute *devattr, char *buf)
@@ -205,6 +226,7 @@ static ssize_t set_adin_voltage_value(struct device *dev, u8 address, struct dev
 
 static ssize_t show_voltage_max(struct device *dev, struct device_attribute *devattr, char *buf)
 {
+	struct ltc2946_data *data = dev_get_drvdata(dev);
 	if(data->use_vin_voltage)
 		return show_vin_voltage_value(dev, REG_VIN_VOLTAGE_MAX, devattr, buf);
 	else
@@ -213,6 +235,7 @@ static ssize_t show_voltage_max(struct device *dev, struct device_attribute *dev
 
 static ssize_t set_voltage_max(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
 {
+	struct ltc2946_data *data = dev_get_drvdata(dev);
 	if(data->use_vin_voltage)
                 return set_vin_voltage_value(dev, REG_VIN_VOLTAGE_MAX, devattr, buf);
         else
@@ -221,6 +244,7 @@ static ssize_t set_voltage_max(struct device *dev, struct device_attribute *deva
 
 static ssize_t show_voltage_min(struct device *dev, struct device_attribute *devattr, char *buf)
 {
+	struct ltc2946_data *data = dev_get_drvdata(dev);
 	if(data->use_vin_voltage)
                 return show_vin_voltage_value(dev, REG_VIN_VOLTAGE_MIN, devattr, buf);
         else
@@ -229,6 +253,7 @@ static ssize_t show_voltage_min(struct device *dev, struct device_attribute *dev
 
 static ssize_t set_voltage_min(struct device *dev, struct device_attribute *devattr, const char *buf, size_t count)
 {
+	struct ltc2946_data *data = dev_get_drvdata(dev);
 	if(data->use_vin_voltage)
                 return set_vin_voltage_value(dev, REG_VIN_VOLTAGE_MIN, devattr, buf);
         else
@@ -237,6 +262,7 @@ static ssize_t set_voltage_min(struct device *dev, struct device_attribute *deva
 
 static ssize_t show_voltage_input(struct device *dev, struct device_attribute *devattr, char *buf)
 {
+	struct ltc2946_data *data = dev_get_drvdata(dev);
 	if(data->use_vin_voltage)
                 return show_vin_voltage_value(dev, REG_VIN_VOLTAGE, devattr, buf);
         else
